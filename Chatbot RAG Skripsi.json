@@ -1,0 +1,163 @@
+{
+  "name": "Chatbot RAG Skripsi",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hi there! 👋\nMy name is Verin. How can I assist you today?",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d5a6cf10-0e2d-44ef-893e-d08768699444",
+      "name": "When chat message received",
+      "webhookId": "007459af-b7a3-4336-901b-bb809165e7d3"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Kamu adalah Asisten Akademik yang membantu pengguna memahami dokumen panduan penulisan ilmiah tugas akhir dan skripsi.\n\nJawablah pertanyaan dengan bahasa Indonesia yang jelas, sopan, dan mudah dipahami.\n\nGunakan informasi yang ditemukan dari dokumen yang relevan sebagai dasar jawaban. Jangan mengarang aturan, kutipan, atau informasi yang tidak didukung dokumen.\n\nJika informasi yang dibutuhkan tidak ditemukan dalam dokumen, sampaikan dengan jujur bahwa informasi tersebut belum ditemukan dalam dokumen yang tersedia.\n\nBerikan jawaban yang terstruktur dan sertakan langkah-langkah atau poin-poin jika membantu pengguna memahami informasi.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "f245e5da-4a42-4c7f-b5bc-7405c2dee792",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        96,
+        208
+      ],
+      "id": "51a1c0fe-0a0c-4987-9b31-7dd45e1701bf",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Cari potongan dokumen panduan penulisan ilmiah tugas akhir atau skripsi yang relevan dengan pertanyaan pengguna. Gunakan hasil pencarian sebagai sumber jawaban dan jangan mengarang informasi yang tidak ditemukan dalam dokumen.",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        16
+      ],
+      "id": "1cc13b8f-e43d-4558-802e-b4c1e65e0f82",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "KwC3mhOjePGZJ4LT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-2"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        688,
+        224
+      ],
+      "id": "94be1f7a-b6aa-49ce-b322-c5fd6c8ca229",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a0bacd75-d025-4771-84f3-7a53745e24ed",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "sKhSmbQLUCQaUDC0",
+  "tags": []
+}
