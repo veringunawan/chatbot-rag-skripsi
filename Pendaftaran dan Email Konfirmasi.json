@@ -1,0 +1,111 @@
+{
+  "name": "Pendaftaran dan Email Konfirmasi",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Formulir Pendaftaran",
+        "formDescription": "Silakan isi data berikut untuk mendapatkan email konfirmasi pendaftaran.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Nama",
+              "placeholder": "Masukkan nama lengkap",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "placeholder": "nama@email.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Kelas",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Kelas A"
+                  },
+                  {
+                    "option": "Kelas B"
+                  },
+                  {
+                    "option": "Kelas C"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {
+          "buttonLabel": "Kirim Pendaftaran",
+          "path": "form-pendaftaran-konfirmasi"
+        }
+      },
+      "id": "5f6c1abc-eccc-4a02-bd17-689e92a9ff32",
+      "name": "Form Pendaftaran",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        -128
+      ],
+      "webhookId": "e43e3179-cac8-485a-8b49-91b227df2644"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Email }}",
+        "subject": "=Konfirmasi Pendaftaran - {{ $json.Nama }}",
+        "message": "={{ \n`<div style=\"font-family: Arial; padding: 20px;\">\n    <h2 style=\"color: blue;\">Pendaftaran Berhasil!</h2>\n\n    <p>Halo <b>${$json.Nama}</b>,</p>\n\n    <p>Terima kasih telah melakukan pendaftaran.</p>\n\n    <table border=\"1\" cellpadding=\"10\" cellspacing=\"0\">\n        <tr>\n            <td><b>Nama</b></td>\n            <td>${$json.Nama}</td>\n        </tr>\n        <tr>\n            <td><b>Email</b></td>\n            <td>${$json.Email}</td>\n        </tr>\n        <tr>\n            <td><b>Kelas</b></td>\n            <td>${$json.Kelas}</td>\n        </tr>\n    </table>\n\n    <p>Mohon simpan email ini sebagai bukti konfirmasi.</p>\n\n    <p>Salam,<br><b>Panitia Pendaftaran</b></p>\n</div>`\n}}",
+        "options": {
+          "appendAttribution": "={{ false }}",
+          "senderName": "Panitia Pendaftaran"
+        }
+      },
+      "id": "ae65b1aa-d3a3-4f30-8064-104890b7c923",
+      "name": "Kirim Email Konfirmasi",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        384,
+        -128
+      ],
+      "webhookId": "958d870f-fdb3-46e1-ae4e-94b14538711f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lnh8GTgGQde85Xzh",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Form Pendaftaran": {
+      "main": [
+        [
+          {
+            "node": "Kirim Email Konfirmasi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "335d7117-fd4d-4d7a-9db5-99b3e9bfc81b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "XQclMH5bIRMasH3X",
+  "tags": []
+}
