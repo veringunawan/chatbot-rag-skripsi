@@ -1,0 +1,491 @@
+{
+  "name": "Competitor Monitoring (sesuai PDF NF Academy)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "a7ed24b4-3bc9-4867-addd-da1fcb06ce5b",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        2272,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "24a89dad71248eb4ec3da57f26d96852b442fed5"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"q\": \"\\\"NF Academy\\\" news\",\n  \"num\": 10\n}",
+        "options": {}
+      },
+      "id": "04cb2823-ca12-4527-9952-24bb7dcd8abb",
+      "name": "NFA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2544,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "24a89dad71248eb4ec3da57f26d96852b442fed5"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"q\": \"\\\"BISA AI\\\" news\",\n  \"num\": 10\n}",
+        "options": {}
+      },
+      "id": "bfb6b7c0-88d2-4c7d-b291-deff8c2cb0d7",
+      "name": "BISA AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2544,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "24a89dad71248eb4ec3da57f26d96852b442fed5"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"q\": \"\\\"Vinix 7\\\" news\",\n  \"num\": 10\n}",
+        "options": {}
+      },
+      "id": "5a9a36f0-c559-4181-808f-0313e00ed9ef",
+      "name": "Vinix7",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2544,
+        1680
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "bc5c8b02-6d73-41a6-bc47-833bd0eebb7c",
+      "name": "Gabungkan Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        2800,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const brands=[\"NF Academy\",\"BISA AI\",\"Vinix 7\"];\nconst items=$input.all(); let articles=[];\nitems.forEach((it,i)=>{for(const a of (it.json.organic||[])){articles.push({brand:brands[i],title:a.title||\"\",snippet:a.snippet||\"\",link:a.link||\"\",processedAt:new Date().toISOString()});}});\nconst counts=Object.fromEntries(brands.map(b=>[b,articles.filter(a=>a.brand===b).length]));\nconst total=articles.length; const sov=Object.fromEntries(brands.map(b=>[b,total?Number((counts[b]/total*100).toFixed(1)):0]));\nreturn [{json:{brands,articles,metrics:{totalMentions:total,counts,sov},combinedText:articles.map(a=>`[${a.brand}] ${a.title} ${a.snippet}`).join(\"\\n\")}}];"
+      },
+      "id": "81450e7a-1741-4df2-9bf8-f710deb3bd70",
+      "name": "Menyiapkan Teks AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3024,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'Data KPI: '+JSON.stringify({totalMentions:$json.totalMentions,counts:$json.counts,sov:$json.sov})+'\\nBerita: '+$json.combinedText }}",
+        "options": {
+          "systemMessage": "Anda analis strategi bisnis dan intelijen kompetitif. Analisis berita yang diberikan saja. Untuk NF Academy, BISA AI, Vinix 7 berikan sentimen, skor reputasi 1-10, kelebihan, kelemahan, ringkasan eksekutif dan rekomendasi strategis. Jawab terstruktur dan dalam Bahasa Indonesia."
+        }
+      },
+      "id": "fcc65f72-2547-4471-a870-85cc2ad58dc1",
+      "name": "Prompt untuk perbandingan",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        3200,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "model": "xiaomi/mimo-v2.6-flash",
+        "options": {}
+      },
+      "id": "a7306a66-c44a-40f0-8b7f-7e7290c9e55d",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        3232,
+        1728
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "iPZFVzr8reRcwMlH",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1hSk02nbGOpFzZ5wzIBYr5SBqcrmpHaE_PKER-jXd-CE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hSk02nbGOpFzZ5wzIBYr5SBqcrmpHaE_PKER-jXd-CE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Tanggal": "={{ $now.setZone('Asia/Jakarta').toFormat('yyyy-MM-dd HH:mm:ss') }}",
+            "Total Mentions": "={{ $('Menyiapkan Teks AI').item.json.totalMentions }}",
+            "Analisis AI": "={{ $('Prompt untuk perbandingan').item.json.output }}",
+            "Status": "Selesai"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Tanggal",
+              "displayName": "Tanggal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Total Mentions",
+              "displayName": "Total Mentions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Analisis AI",
+              "displayName": "Analisis AI",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "8eac9bbf-5441-40fe-ba5d-94682f9d4647",
+      "name": "Mencatat Hasil",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3472,
+        1488
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "t5FHAZ6JDl0LEOP3",
+          "name": "Google Sheets account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdfshift.io/v3/convert/pdf",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "sk_b7b68a4d014ea1d7afad660471d33ffc1202aafd"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source",
+              "value": "={{ $('Generate HTML Report').item.json.html }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "0eb3cac0-bf4f-4e0a-8e3a-e1225125236b",
+      "name": "HTML to PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3920,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "6869186508",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "Laporan Competitor Monitoring"
+        }
+      },
+      "id": "162e9283-ba7a-487c-800a-f3c14578f521",
+      "name": "Kirim PDF ke Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4144,
+        1488
+      ],
+      "webhookId": "ef5a1927-ea96-48c2-8d37-96af0c7a5ebb",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nconst tanggal = data.Tanggal || new Date().toLocaleString('id-ID');\nconst analisis = data['Analisis AI'] || data.output || 'Analisis belum tersedia';\n\nconst html = `\n<!DOCTYPE html>\n<html lang=\"id\">\n<head>\n<meta charset=\"UTF-8\">\n<title>Competitor Monitoring Report</title>\n<style>\nbody {\n  font-family: Arial, sans-serif;\n  margin: 40px;\n  color: #222;\n}\nh1 {\n  color: #1e40af;\n}\n.header {\n  background: #1e40af;\n  color: white;\n  padding: 20px;\n  border-radius: 8px;\n}\n.content {\n  margin-top: 25px;\n  line-height: 1.7;\n  white-space: pre-wrap;\n}\n.footer {\n  margin-top: 30px;\n  font-size: 12px;\n  color: #777;\n}\n</style>\n</head>\n<body>\n<div class=\"header\">\n<h1>Competitor Monitoring Report</h1>\n<p>Tanggal: ${tanggal}</p>\n</div>\n\n<div class=\"content\">\n${analisis}\n</div>\n\n<div class=\"footer\">\nGenerated automatically by n8n Competitor Monitoring\n</div>\n</body>\n</html>\n`;\n\nreturn [{\n  json: {\n    html,\n    tanggal\n  }\n}];"
+      },
+      "id": "8691a688-0ec6-4507-99df-e9e2ef62c742",
+      "name": "Generate HTML Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3696,
+        1488
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "NFA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "BISA AI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Vinix7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NFA": {
+      "main": [
+        [
+          {
+            "node": "Gabungkan Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BISA AI": {
+      "main": [
+        [
+          {
+            "node": "Gabungkan Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Vinix7": {
+      "main": [
+        [
+          {
+            "node": "Gabungkan Data",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Gabungkan Data": {
+      "main": [
+        [
+          {
+            "node": "Menyiapkan Teks AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Menyiapkan Teks AI": {
+      "main": [
+        [
+          {
+            "node": "Prompt untuk perbandingan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt untuk perbandingan": {
+      "main": [
+        [
+          {
+            "node": "Mencatat Hasil",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Prompt untuk perbandingan",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mencatat Hasil": {
+      "main": [
+        [
+          {
+            "node": "Generate HTML Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML to PDF": {
+      "main": [
+        [
+          {
+            "node": "Kirim PDF ke Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate HTML Report": {
+      "main": [
+        [
+          {
+            "node": "HTML to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1ed3b7e6-9b02-468d-9ad5-5f62c5db30e2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "KAypRNLCITZclVJw",
+  "tags": []
+}
