@@ -1,0 +1,369 @@
+{
+  "name": "Analisis Jam Terbaik Posting",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "8b39f157-9a3f-4a97-bc25-5f3bb3f4e180",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1-XltS0uXpROldoUB4HHiCJlXXHUjsnwVf6_vyNzj7kU",
+          "mode": "list",
+          "cachedResultName": "Copy of Best Time to Post Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1-XltS0uXpROldoUB4HHiCJlXXHUjsnwVf6_vyNzj7kU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Data Posting",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "cdb0df89-de18-4380-a76f-7a83a8f2eace",
+      "name": "Baca Data Historis",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "XZb7tBrsJ6zIf1GB",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\n// Hitung engagement tiap postingan\nconst data = rows.map(item => {\n  const row = item.json;\n\n  const likes = Number(row.Likes) || 0;\n  const comments = Number(row.Comments) || 0;\n  const shares = Number(row.Shares) || 0;\n  const hour = Number(row[\"Jam Posting\"]);\n\n  const engagement = likes + (comments * 2) + (shares * 3);\n\n  return {\n    jam: hour,\n    likes,\n    comments,\n    shares,\n    engagement\n  };\n});\n\n// Kelompokkan berdasarkan jam posting\nconst grouped = {};\n\nfor (const post of data) {\n  if (!grouped[post.jam]) {\n    grouped[post.jam] = {\n      total: 0,\n      jumlah: 0\n    };\n  }\n\n  grouped[post.jam].total += post.engagement;\n  grouped[post.jam].jumlah += 1;\n}\n\n// Hitung rata-rata engagement per jam\nconst hasil = Object.entries(grouped).map(([jam, value]) => ({\n  jam: Number(jam),\n  rataRataEngagement: Number(\n    (value.total / value.jumlah).toFixed(2)\n  ),\n  jumlahPosting: value.jumlah\n}));\n\n// Urutkan dari engagement tertinggi\nhasil.sort(\n  (a, b) => b.rataRataEngagement - a.rataRataEngagement\n);\n\n// Ambil 5 jam terbaik\nreturn hasil.slice(0, 5).map((item, index) => ({\n  json: {\n    ranking: index + 1,\n    jamPosting: item.jam,\n    rataRataEngagement: item.rataRataEngagement,\n    jumlahPosting: item.jumlahPosting\n  }\n}));"
+      },
+      "id": "f2d110fc-615d-4032-84dc-115d2c571e63",
+      "name": "Hitung Engagement dan 5 Jam Terbaik",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "clear",
+        "documentId": {
+          "__rl": true,
+          "value": "1-XltS0uXpROldoUB4HHiCJlXXHUjsnwVf6_vyNzj7kU",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Hasil Analisis",
+          "mode": "name"
+        },
+        "keepFirstRow": true
+      },
+      "id": "e3f1e99f-cafe-4eb9-a3ed-b11c39bd19fb",
+      "name": "Hapus Analisis Lama",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "XZb7tBrsJ6zIf1GB",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1-XltS0uXpROldoUB4HHiCJlXXHUjsnwVf6_vyNzj7kU",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Hasil Analisis",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ranking": "={{ $json.ranking }}",
+            "jam": "={{ $json.jamPosting }}",
+            "avgEngagement": "={{ $json.rataRataEngagement }}",
+            "jumlahPost": "={{ $json.jumlahPosting }}",
+            "avgLikes": "={{ $json.avgLikes }}",
+            "avgComments": "={{ $json.avgComments }}",
+            "avgShares": "={{ $json.avgShares }}",
+            "platformTerbanyak": "={{ $json.platformTerbanyak }}",
+            "engagementScore": "={{ $json.engagementScore }}",
+            "rekomendasi": "={{ $json.rekomendasi }}",
+            "tanggalAnalisis": "={{ $json.tanggalAnalisis }}",
+            "totalDataDianalisis": "={{ $json.totalDataDianalisis }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ranking",
+              "displayName": "ranking",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "jam",
+              "displayName": "jam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avgEngagement",
+              "displayName": "avgEngagement",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "jumlahPost",
+              "displayName": "jumlahPost",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avgLikes",
+              "displayName": "avgLikes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avgComments",
+              "displayName": "avgComments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avgShares",
+              "displayName": "avgShares",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "platformTerbanyak",
+              "displayName": "platformTerbanyak",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "engagementScore",
+              "displayName": "engagementScore",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rekomendasi",
+              "displayName": "rekomendasi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tanggalAnalisis",
+              "displayName": "tanggalAnalisis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "totalDataDianalisis",
+              "displayName": "totalDataDianalisis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "69b022ab-565f-4376-bd43-a432b1d67620",
+      "name": "Tulis 5 Jam Terbaik",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        880,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "XZb7tBrsJ6zIf1GB",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const pesan = items.map((item) => {\n  const d = item.json;\n\n  return {\n    json: {\n      text:\n        '📊 HASIL ANALISIS 5 JAM TERBAIK\\n\\n' +\n        '🏆 Ranking: ' + d.ranking + '\\n' +\n        '🕒 Jam Posting: ' + d.jamPosting + '\\n' +\n        '📈 Rata-rata Engagement: ' + d.avgEngagement + '\\n' +\n        '📝 Jumlah Posting: ' + d.jumlahPost\n    }\n  };\n});\n\nreturn pesan;"
+      },
+      "id": "6b3615a2-7915-4547-9026-be31f8f3d10d",
+      "name": "Format Pesan Telegram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "6869186508",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "1ce63cab-6def-4042-976b-600967fc10c1",
+      "name": "Kirim Laporan Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1328,
+        0
+      ],
+      "webhookId": "5060c64a-e233-4f37-93c9-75d09cfd3593",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Baca Data Historis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baca Data Historis": {
+      "main": [
+        [
+          {
+            "node": "Hitung Engagement dan 5 Jam Terbaik",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hitung Engagement dan 5 Jam Terbaik": {
+      "main": [
+        [
+          {
+            "node": "Hapus Analisis Lama",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hapus Analisis Lama": {
+      "main": [
+        [
+          {
+            "node": "Tulis 5 Jam Terbaik",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tulis 5 Jam Terbaik": {
+      "main": [
+        [
+          {
+            "node": "Format Pesan Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Pesan Telegram": {
+      "main": [
+        [
+          {
+            "node": "Kirim Laporan Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0ff67600-b62a-4946-9a33-0eb08f624b03",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "sFK4Xzt16hrQN7T4",
+  "tags": []
+}
