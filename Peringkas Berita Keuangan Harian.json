@@ -1,0 +1,355 @@
+{
+  "name": "Peringkas Berita Keuangan Harian",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "id": "dd534ed2-ec57-4976-997b-4a89c67af5a5",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.cnbcindonesia.com/market/rss",
+        "options": {}
+      },
+      "id": "8cb6b13d-cf8a-4544-b330-dcc4cc3b8e38",
+      "name": "CNBC Indonesia RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "url": "https://finance.detik.com/rss",
+        "options": {}
+      },
+      "id": "3e4a07b0-a6b1-4496-8e83-5da3432586cd",
+      "name": "Finance Detik RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        192
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {},
+      "id": "d23bc82d-17d0-48f4-adf1-499a7aff960b",
+      "name": "Menggabungkan 2 Output RSS",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        496,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "id": "a963a7d4-9b46-4ae0-af2f-9c542c70ba62",
+      "name": "Membatasi hanya 10",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        720,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.link }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "a17541f9-5717-487d-8fce-f4aef44bf249",
+      "name": "Unduh halaman web dari setiap URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        944,
+        224
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "judul",
+              "cssSelector": "h1"
+            },
+            {
+              "key": "isi",
+              "cssSelector": "div.detail-text, div.detail_text, div.detail__body-text",
+              "skipSelectors": "script, style, table, .parallaxindetail, .detail__body-tag, .staticdetail_container"
+            }
+          ]
+        },
+        "options": {
+          "trimValues": true,
+          "cleanUpText": true
+        }
+      },
+      "id": "4aec66e1-b69a-4dfb-9dc7-955eaa1fcdb8",
+      "name": "Clean kode HTML dan Ekstrak",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        48,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "artikel",
+        "options": {}
+      },
+      "id": "5453e1fc-09bb-446a-9426-d8fd6511b5e2",
+      "name": "Menggabungkan menjadi 1 blok teks besar",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        272,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Berikut kumpulan {{ $json.artikel.length }} berita keuangan terbaru hari ini ({{ $now.setZone(\"Asia/Jakarta\").toFormat(\"dd LLL yyyy\") }}):\n\n{{ $json.artikel.map((a, i) => \"BERITA \" + (i + 1) + \": \" + (a.judul || \"\") + \"\\n\" + String(a.isi || \"\").slice(0, 3000)).join(\"\\n\\n---\\n\\n\") }}\n\nRingkas kumpulan berita di atas menjadi \"5 Poin Utama Pergerakan Pasar Hari Ini\".",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Anda adalah analis pasar keuangan senior yang menyiapkan briefing pagi untuk tim investasi.\n\nTugas: baca seluruh berita yang diberikan, lalu tulis tepat 5 poin utama pergerakan pasar hari ini (saham/IHSG, rupiah & valas, suku bunga, komoditas, sentimen global/makro bila relevan).\n\nAturan:\n- Bahasa Indonesia yang ringkas dan profesional.\n- Setiap poin maksimal 2 kalimat, sertakan angka/data penting bila ada.\n- Hanya gunakan fakta dari berita yang diberikan, jangan mengarang.\n- Format teks biasa tanpa markdown, tanpa tanda bintang, tanpa tag HTML.\n- Format output:\n5 Poin Utama Pergerakan Pasar Hari Ini\n\n1. ...\n2. ...\n3. ...\n4. ...\n5. ..."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "id": "8c898b30-4cd7-4a5c-8134-6f02876201eb",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        480,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "model": "xiaomi/mimo-v2.6-flash",
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "656bb752-3f61-4652-8bf7-cba62f1aec8c",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        608,
+        640
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "iPZFVzr8reRcwMlH",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6869186508",
+        "text": "=Briefing Pagi - {{ $now.setZone(\"Asia/Jakarta\").toFormat(\"dd LLL yyyy\") }}\n\n{{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "e10c93db-3fed-4d3d-aa11-8e8abdbf0a46",
+      "name": "Send a text message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        464
+      ],
+      "webhookId": "02dbe0b8-9abe-4761-820d-6b916932b963",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "CNBC Indonesia RSS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Finance Detik RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CNBC Indonesia RSS": {
+      "main": [
+        [
+          {
+            "node": "Menggabungkan 2 Output RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finance Detik RSS": {
+      "main": [
+        [
+          {
+            "node": "Menggabungkan 2 Output RSS",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Menggabungkan 2 Output RSS": {
+      "main": [
+        [
+          {
+            "node": "Membatasi hanya 10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Membatasi hanya 10": {
+      "main": [
+        [
+          {
+            "node": "Unduh halaman web dari setiap URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unduh halaman web dari setiap URL": {
+      "main": [
+        [
+          {
+            "node": "Clean kode HTML dan Ekstrak",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean kode HTML dan Ekstrak": {
+      "main": [
+        [
+          {
+            "node": "Menggabungkan menjadi 1 blok teks besar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Menggabungkan menjadi 1 blok teks besar": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f44da0dd-d12b-400b-b8cc-67aecb896cec",
+  "meta": {
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "1fnAbp6uSlfo2Cs9",
+  "tags": []
+}
