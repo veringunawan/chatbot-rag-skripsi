@@ -1,0 +1,284 @@
+{
+  "name": "Laporan Pengeluaran Mingguan",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "id": "f348aa97-6fe7-49d1-a81e-f44cbf495e5b",
+      "name": "Setiap Hari Minggu",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        96,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1zkqqeULOfjuroZkybREw9P1S76E6T6Q4UT8DC1OJiK8",
+          "mode": "list",
+          "cachedResultName": "Data Dummy Catatan Keuangan",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zkqqeULOfjuroZkybREw9P1S76E6T6Q4UT8DC1OJiK8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1zkqqeULOfjuroZkybREw9P1S76E6T6Q4UT8DC1OJiK8/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "c8d85865-5fa2-4a8e-b378-0d45e288cbd7",
+      "name": "Ambil Log Pengeluaran",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        320,
+        288
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "XZb7tBrsJ6zIf1GB",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst now = new Date();\nconst end = new Date(now); end.setHours(23,59,59,999);\nconst start = new Date(now); start.setDate(start.getDate()-7); start.setHours(0,0,0,0);\nfunction parseDate(v) {\n if (v === undefined || v === null || String(v).trim()==='') return null;\n const s=String(v).trim();\n const m=s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/);\n if(m){ const d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]));\n   if(d.getFullYear()!==Number(m[3])||d.getMonth()!==Number(m[2])-1||d.getDate()!==Number(m[1])) return null;\n   return d; }\n const d=new Date(v); return Number.isNaN(d.getTime())?null:d;\n}\nfunction fmtDate(d){return d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric',timeZone:'Asia/Jakarta'});}\nfunction amount(v){ if(typeof v==='number') return v; const s=String(v??'').trim().replace(/\\s/g,'').replace(/Rp/gi,'');\n  // Support Indonesian formatted numbers: 1.250.000 or 1.250,50\n  if(/^\\-?\\d{1,3}(\\.\\d{3})+(,\\d+)?$/.test(s)) return Number(s.replace(/\\./g,'').replace(',','.'));\n  if(/^\\-?\\d+(,\\d+)?$/.test(s)) return Number(s.replace(',','.'));\n  return Number(s.replace(/[^\\d.-]/g,''))||0;\n}\nconst expenses=[];\nfor(const item of items){const r=item.json; const dt=parseDate(r.Tanggal??r.tanggal??r.Date??r.date);\n if(!dt||dt<start||dt>end) continue;\n expenses.push({date:dt,category:r.Kategori??r.kategori??r.Category??'Tidak diketahui',description:r.Deskripsi??r.deskripsi??r.Description??r.Keterangan??'-',amount:amount(r.Jumlah??r.jumlah??r.Nominal??r.nominal??r.Amount??r.amount)});\n}\nexpenses.sort((a,b)=>a.date-b.date);\nconst total=expenses.reduce((s,e)=>s+e.amount,0);\nconst promptData=expenses.length?expenses.map(e=>`Tanggal: ${fmtDate(e.date)}\\nKategori: ${e.category}\\nDeskripsi: ${e.description}\\nJumlah: Rp${e.amount.toLocaleString('id-ID')}`).join('\\n-------------------------\\n')+`\\n\\nTOTAL PENGELUARAN: Rp${total.toLocaleString('id-ID')}\\nJUMLAH TRANSAKSI: ${expenses.length}`:'Tidak ditemukan pengeluaran dalam 7 hari terakhir.';\nreturn [{json:{hasExpenses:expenses.length>0,jumlahTransaksi:expenses.length,totalPengeluaran:total,promptData,startDate:fmtDate(start),endDate:fmtDate(end)}}];"
+      },
+      "id": "9553e958-a0da-408d-b75c-e6398e53faed",
+      "name": "Filter 7 Hari & Format Teks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7245109e-5e39-4c27-a604-a1d6caab24e2",
+              "leftValue": "={{ $json.hasExpenses }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4b97f656-94c3-4aff-afd4-c45bcefe0b22",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        768,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Berikut data pengeluaran 7 hari terakhir:\n\n{{ $json.promptData }}\n\nInstruksi: Analisis kebiasaan belanja, jelaskan total pengeluaran dan kategori terbesar bila tersedia, lalu berikan tepat satu saran penghematan konkret. Jangan mengarang data. Gunakan bahasa Indonesia ringkas dan format yang cocok dikirim Telegram.\n\nFormat:\nLAPORAN PENGELUARAN MINGGUAN\nRingkasan Pengeluaran:\nAnalisis Kebiasaan Belanja:\nSaran Penghematan:",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "id": "aaf263d7-4c9b-41cc-966b-3f3f999e31d0",
+      "name": "Analisis",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        992,
+        160
+      ],
+      "connections": {}
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "xiaomi/mimo-v2-flash:free",
+          "mode": "list",
+          "cachedResultName": "xiaomi/mimo-v2-flash:free"
+        },
+        "options": {}
+      },
+      "id": "969626ce-2e4a-4d06-bc8a-8209e9095740",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        992,
+        0
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "iPZFVzr8reRcwMlH",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6869186508",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "9f6f8735-46af-4d99-9e7c-d2cd51276172",
+      "name": "Pesan True",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1232,
+        160
+      ],
+      "webhookId": "5d5802d3-b7b8-4249-aefe-fe7b9a4e63f3",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6869186508",
+        "text": "Tidak ditemukan log pengeluaran untuk 7 hari terakhir. Tidak ada analisis AI yang dibuat.",
+        "additionalFields": {}
+      },
+      "id": "b221ea14-1590-47b9-8b22-39866abb6935",
+      "name": "Pesan False",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        432
+      ],
+      "webhookId": "dc73a09d-e295-45f9-835e-dc69df2fa17c",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Setiap Hari Minggu": {
+      "main": [
+        [
+          {
+            "node": "Ambil Log Pengeluaran",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil Log Pengeluaran": {
+      "main": [
+        [
+          {
+            "node": "Filter 7 Hari & Format Teks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter 7 Hari & Format Teks": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Analisis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pesan False",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisis": {
+      "main": [
+        [
+          {
+            "node": "Pesan True",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analisis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "50102a54-62a2-422c-ab98-5adf0fb926ee",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "TULpcHNHj57PoWj6",
+  "tags": []
+}
