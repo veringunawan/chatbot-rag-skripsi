@@ -1,0 +1,322 @@
+{
+  "name": "Tugas 2 - Auto Generated Interview Question",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "f504d6c4-4618-4a67-a817-22143511c2a7",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        4384,
+        992
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  { json: { id: 101, candidate_name: \"Budi Santoso\", position: \"DevOps Engineer\", claimed_skills: [\"Kubernetes\", \"Helm\", \"Terraform\", \"Docker\", \"CI/CD\"], past_company_type: \"Agen Digital Marketing (Non-tech Product)\" } },\n  { json: { id: 102, candidate_name: \"Siti Aminah\", position: \"Backend Engineer\", claimed_skills: [\"Microservices\", \"Kubernetes\", \"Golang\", \"PostgreSQL\", \"REST API\"], past_company_type: \"Technology Startup\" } }\n];"
+      },
+      "id": "4ff113df-0ef0-4667-b8c5-7aefa5449d2e",
+      "name": "Data Dummy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4608,
+        992
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "364fa75a-b89b-4add-8365-81544c91bf70",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        4832,
+        992
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const candidate = $input.item.json;\nconst llm_prompt = `\nROLE: You are a Senior Technical Interviewer for a ${candidate.position} position.\nCandidate: ${candidate.candidate_name}\nClaimed skills: ${candidate.claimed_skills.join(\", \")}\nPrevious company type: ${candidate.past_company_type}\n\nCreate exactly ONE realistic, challenging technical case-study question in Indonesian.\nFocus on troubleshooting, root-cause analysis, technical reasoning, and practical problem solving.\nRelate the case to the candidate's skills and background. Avoid generic theory.\n\nFormat:\nNama Kandidat: ${candidate.candidate_name}\nTopik Kasus: [topic]\nPertanyaan: [one detailed technical case-study question]\nEkspektasi Jawaban Senior: [key points expected]\n`;\nreturn { json: { ...candidate, llm_prompt } };"
+      },
+      "id": "ed1c4199-44de-49d2-a795-3823304d3e80",
+      "name": "Prompt Builder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5040,
+        1008
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.llm_prompt }}",
+        "messages": {
+          "messageValues": []
+        }
+      },
+      "id": "29445016-afa9-4748-bfb8-e92d32bfdb2e",
+      "name": "Generate Pertanyaan",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        5200,
+        992
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "6869186508",
+        "text": "=\n={{ '📋 PERTANYAAN WAWANCARA TEKNIS\\n\\n' + ($json.text || '').replace(/[*_`[\\]()]/g, '').slice(0, 3900) }}\n",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "b1ce0e01-13d5-4c0d-af0e-2d40324b9eec",
+      "name": "Kirim Hasil Pertanyaan",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        5520,
+        992
+      ],
+      "webhookId": "f19a4f21-be68-4359-99dc-db631b9b4896",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "id": "714c15be-ea94-4fc1-9461-1cc303ce454e",
+      "name": "gemini-2.5-flash",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        5632,
+        1104
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const candidate = $('Loop Over Items').item.json;\nconst generated = $('Generate Pertanyaan').item.json;\nconst question = generated.text || generated.response || generated.output || \"\";\nlet candidate_answer;\nif (candidate.candidate_name.includes(\"Budi\")) {\n  candidate_answer = \"Saya akan memeriksa kubectl get pods dan kubectl describe pod untuk melihat status serta event. Lalu saya cek kubectl logs, konfigurasi environment, readiness/liveness probe, resource requests dan limits, image, serta koneksi database. Setelah menemukan root cause, saya perbaiki manifest atau konfigurasi, deploy bertahap, lalu pantau logs, events, dan metrics untuk memastikan layanan pulih.\";\n} else {\n  candidate_answer = \"Biasanya saya restart server terlebih dahulu. Kalau masih error saya coba jalankan ulang aplikasi atau meminta bantuan tim.\";\n}\nreturn { json: { ...candidate, question, candidate_answer } };"
+      },
+      "id": "d81bee5d-0e88-4b45-bf14-3af908162e83",
+      "name": "Mock Jawaban",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5264,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const d = $input.item.json;\nconst evaluator_prompt = `\nROLE: You are a Senior Hiring Manager and technical evaluator.\nEvaluate the candidate answer objectively.\n\nCandidate: ${d.candidate_name}\nPosition: ${d.position}\nQuestion: ${d.question}\nCandidate Answer: ${d.candidate_answer}\n\nRubric (0-100):\n- Technical accuracy and relevance: 0-30\n- Troubleshooting and root-cause analysis: 0-30\n- Technical depth and reasoning: 0-25\n- Practicality and clarity: 0-15\n\nA generic answer without concrete diagnostic steps must receive a low score.\nA strong answer explains tools, diagnostic sequence, root cause, remediation, and validation.\nDecision: score >= 70 = PASS; score < 70 = FAIL.\n\nAnswer in Indonesian using:\nNama Kandidat: ${d.candidate_name}\n🎯 Skor: [number]/100\n💡 Analisa: [brief technical-depth analysis]\n🚩 Keputusan: [PASS/FAIL]\nAlasan: [brief reason]\n`;\nreturn { json: { ...d, evaluator_prompt } };"
+      },
+      "id": "fb342dfb-57ae-4f88-9919-14214aaf332e",
+      "name": "Evaluator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5440,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.evaluator_prompt }}",
+        "messages": {
+          "messageValues": []
+        }
+      },
+      "id": "146b6a14-4bd6-49fa-a17b-62d00bee3e64",
+      "name": "Evaluator Prompt",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        5632,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "6869186508",
+        "text": "=📊 HASIL EVALUASI KANDIDAT\\n\\n{{ $json.text }}",
+        "additionalFields": {}
+      },
+      "id": "fa799e6e-664a-47be-bff9-24eaa09f240e",
+      "name": "Kirim Hasil Evaluator",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        5952,
+        1216
+      ],
+      "webhookId": "a1e26efd-5eb8-407b-9ad2-0e68135aff48",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Data Dummy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Dummy": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Prompt Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt Builder": {
+      "main": [
+        [
+          {
+            "node": "Generate Pertanyaan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Pertanyaan": {
+      "main": [
+        [
+          {
+            "node": "Kirim Hasil Pertanyaan",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mock Jawaban",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini-2.5-flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Pertanyaan",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Evaluator Prompt",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock Jawaban": {
+      "main": [
+        [
+          {
+            "node": "Evaluator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluator": {
+      "main": [
+        [
+          {
+            "node": "Evaluator Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluator Prompt": {
+      "main": [
+        [
+          {
+            "node": "Kirim Hasil Evaluator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kirim Hasil Evaluator": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "43488b35-314d-4e63-adea-bd36fab5cd8e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "zjfeIcpvq1XthYPr",
+  "tags": []
+}
