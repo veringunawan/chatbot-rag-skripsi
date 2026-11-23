@@ -1,0 +1,413 @@
+{
+  "name": "Approval Handler Cuti Karyawan",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Formulir Pengajuan Cuti",
+        "formDescription": "Silakan isi detail cuti Anda. Pastikan tanggal dan alasan pengajuan sudah sesuai.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Email Karyawan",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Jenis Cuti",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Cuti Tahunan"
+                  },
+                  {
+                    "option": "Cuti Sakit"
+                  },
+                  {
+                    "option": "Cuti Tanpa Bayaran"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Tanggal Mulai",
+              "fieldType": "date",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Tanggal Selesai",
+              "fieldType": "date",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Alasan/Keterangan",
+              "fieldType": "textarea",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "buttonLabel": "Kirim Pengajuan"
+        }
+      },
+      "id": "4293e6ae-4931-4dc0-b7b8-3a47966d74c4",
+      "name": "On form submission",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        128
+      ],
+      "webhookId": "4510a14f-169a-4942-879a-c9259d8c101d"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1J6s_2N1rFL3frGHOxW7ln_a3JYpF9EJhW4vf89Ncoig",
+          "mode": "list",
+          "cachedResultName": "contoh",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1J6s_2N1rFL3frGHOxW7ln_a3JYpF9EJhW4vf89Ncoig/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1483810373,
+          "mode": "list",
+          "cachedResultName": "DB_Karyawan",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1J6s_2N1rFL3frGHOxW7ln_a3JYpF9EJhW4vf89Ncoig/edit#gid=1483810373"
+        },
+        "options": {}
+      },
+      "id": "fc1456d0-6ef7-47b9-8c88-179b12c0dc8d",
+      "name": "Baca Sheet DB_Karyawan",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        128
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "t5FHAZ6JDl0LEOP3",
+          "name": "Google Sheets account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ambil data formulir dan data karyawan dari Google Sheets\nconst form = $('On form submission').first().json;\nconst rows = $input.all().map(item => item.json);\nconst employee = rows[0];\n\nif (!employee) {\n  return [{\n    json: {\n      ...form,\n      employeeFound: false,\n      isApprovedSystem: false,\n      validationMessage: 'Email karyawan tidak ditemukan di DB_Karyawan.',\n      requestId: `CUTI-${Date.now()}`,\n      durationRequested: 0\n    }\n  }];\n}\n\nconst email = form['Email Karyawan'];\nconst startRaw = form['Tanggal Mulai'];\nconst endRaw = form['Tanggal Selesai'];\nconst start = new Date(startRaw);\nconst end = new Date(endRaw);\n\nif (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {\n  throw new Error('Tanggal mulai/selesai tidak valid. Tanggal selesai harus sama dengan atau setelah tanggal mulai.');\n}\n\n// Menghitung durasi kalender secara inklusif.\nconst startUTC = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());\nconst endUTC = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());\nconst durationRequested = Math.floor((endUTC - startUTC) / 86400000) + 1;\n\nconst saldoCuti = Number(employee.Saldo_Cuti ?? 0);\nconst managerEmail = employee.Manager_Email ?? '';\nconst employeeName = employee.Nama ?? employee.Nama_Karyawan ?? email;\nconst isApprovedSystem = saldoCuti >= durationRequested && durationRequested > 0;\n\nreturn [{\n  json: {\n    ...form,\n    employeeFound: true,\n    employeeName,\n    email,\n    managerEmail,\n    saldoCuti,\n    durationRequested,\n    isApprovedSystem,\n    validationMessage: isApprovedSystem\n      ? 'Saldo cuti mencukupi. Menunggu persetujuan manajer.'\n      : 'Saldo cuti tidak mencukupi atau data saldo tidak valid.',\n    requestId: `CUTI-${Date.now()}`\n  }\n}];"
+      },
+      "id": "758adbb7-5b12-4a0f-87d4-5b3c214da646",
+      "name": "Validasi Cuti",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1J6s_2N1rFL3frGHOxW7ln_a3JYpF9EJhW4vf89Ncoig",
+          "mode": "list",
+          "cachedResultName": "contoh",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1J6s_2N1rFL3frGHOxW7ln_a3JYpF9EJhW4vf89Ncoig/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1036782011,
+          "mode": "list",
+          "cachedResultName": "Log Pengajuan",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1J6s_2N1rFL3frGHOxW7ln_a3JYpF9EJhW4vf89Ncoig/edit#gid=1036782011"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "={{ $json.employeeFound ? ($json.isApprovedSystem ? 'Pending' : 'Rejected - Saldo Tidak Cukup') : 'Rejected - Karyawan Tidak Ditemukan' }}",
+            "ID_Request": "={{ $json.requestId }}",
+            "Timestamp": "={{ $json.submittedAt || $now.toISO() }}",
+            "Email_Karyawan": "={{ $json.email }}",
+            "Jenis_Cuti": "={{ $json[\"Jenis Cuti\"] }}",
+            "Tanggal_Mulai": "={{ $json[\"Tanggal Mulai\"] }}",
+            "Tanggal_Selesai": "={{ $json[\"Tanggal Selesai\"] }}",
+            "Durasi": "={{ $json.durationRequested }}",
+            "Alasan": "={{ $json[\"Alasan/Keterangan\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_Request",
+              "displayName": "ID_Request",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email_Karyawan",
+              "displayName": "Email_Karyawan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Jenis_Cuti",
+              "displayName": "Jenis_Cuti",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tanggal_Mulai",
+              "displayName": "Tanggal_Mulai",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tanggal_Selesai",
+              "displayName": "Tanggal_Selesai",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Durasi",
+              "displayName": "Durasi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Alasan",
+              "displayName": "Alasan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "92de8500-c1be-4618-88cc-a1da873f01bc",
+      "name": "Update Sheet Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        704,
+        128
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "t5FHAZ6JDl0LEOP3",
+          "name": "Google Sheets account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dc268383-a3b8-42e8-a3db-f4228dec74bd",
+              "leftValue": "={{ $('Validasi Cuti').first().json.isApprovedSystem }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "3c3cd35a-437a-4e2c-9fea-3d86dfeded84",
+              "leftValue": "={{ $('Validasi Cuti').first().json.employeeFound }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "575caf2f-4c09-4484-883a-e6f1f59496ea",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        944,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Validasi Cuti').first().json.managerEmail }}",
+        "subject": "Permohonan Cuti Menunggu Persetujuan",
+        "message": "=<p>Halo Manajer,</p>\n<p>Ada pengajuan cuti baru yang membutuhkan persetujuan Anda.</p>\n<ul>\n<li><b>Nama:</b> {{ $('Validasi Cuti').first().json.employeeName }}</li>\n<li><b>Email:</b> {{ $('Validasi Cuti').first().json.email }}</li>\n<li><b>Jenis cuti:</b> {{ $('Validasi Cuti').first().json['Jenis Cuti'] }}</li>\n<li><b>Tanggal:</b> {{ $('Validasi Cuti').first().json['Tanggal Mulai'] }} s.d. {{ $('Validasi Cuti').first().json['Tanggal Selesai'] }}</li>\n<li><b>Total durasi:</b> {{ $('Validasi Cuti').first().json.durationRequested }} hari</li>\n<li><b>Alasan:</b> {{ $('Validasi Cuti').first().json['Alasan/Keterangan'] }}</li>\n<li><b>ID pengajuan:</b> {{ $('Validasi Cuti').first().json.requestId }}</li>\n</ul>\n<p>Silakan lanjutkan proses persetujuan melalui Approval Handler. Ganti URL contoh di bawah dengan Production URL Webhook Approval Handler Anda.</p>\n<p><a href=\"https://GANTI-DENGAN-DOMAIN-N8N/webhook/approval-handler?status=approved&email={{ encodeURIComponent($('Validasi Cuti').first().json.email) }}&days={{ $('Validasi Cuti').first().json.durationRequested }}&id={{ $('Validasi Cuti').first().json.requestId }}\">SETUJUI</a></p>\n<p><a href=\"https://GANTI-DENGAN-DOMAIN-N8N/webhook/approval-handler?status=rejected&email={{ encodeURIComponent($('Validasi Cuti').first().json.email) }}&days={{ $('Validasi Cuti').first().json.durationRequested }}&id={{ $('Validasi Cuti').first().json.requestId }}\">TOLAK</a></p>",
+        "options": {}
+      },
+      "id": "a1d15eed-f079-4f00-be3f-08bb3687a7dc",
+      "name": "Email Diterima",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1216,
+        0
+      ],
+      "webhookId": "38fef290-6ca4-495b-9f20-8364e1d34db4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lnh8GTgGQde85Xzh",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Validasi Cuti').first().json['Email Karyawan'] }}",
+        "subject": "Pengajuan Cuti Ditolak - Saldo Tidak Cukup",
+        "message": "=<p>Halo {{ $('Validasi Cuti').first().json.employeeName || $('Validasi Cuti').first().json['Email Karyawan'] }},</p>\n<p>Mohon maaf, pengajuan cuti Anda belum dapat diproses karena saldo cuti tidak mencukupi.</p>\n<ul>\n<li><b>Jenis cuti:</b> {{ $('Validasi Cuti').first().json['Jenis Cuti'] }}</li>\n<li><b>Durasi diajukan:</b> {{ $('Validasi Cuti').first().json.durationRequested }} hari</li>\n<li><b>Saldo tersedia:</b> {{ $('Validasi Cuti').first().json.saldoCuti ?? 0 }} hari</li>\n<li><b>Alasan:</b> {{ $('Validasi Cuti').first().json.validationMessage }}</li>\n<li><b>ID pengajuan:</b> {{ $('Validasi Cuti').first().json.requestId }}</li>\n</ul>\n<p>Silakan hubungi HR atau ajukan kembali dengan durasi yang sesuai saldo cuti.</p>\n<p>Salam,<br>HR System</p>",
+        "options": {}
+      },
+      "id": "869ee4dc-f5d9-4cea-a9cc-6f5ac3b1a831",
+      "name": "Email Cuti Tidak Cukup",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1216,
+        256
+      ],
+      "webhookId": "59208164-8b32-431f-92c7-5d85cf299d99",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "lnh8GTgGQde85Xzh",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Baca Sheet DB_Karyawan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baca Sheet DB_Karyawan": {
+      "main": [
+        [
+          {
+            "node": "Validasi Cuti",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validasi Cuti": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Sheet Log": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Email Diterima",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Cuti Tidak Cukup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fc9cde13-0fb2-4567-b2c0-83920ca469b4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "zcrm36yc7DsFoyQ5",
+  "tags": []
+}
