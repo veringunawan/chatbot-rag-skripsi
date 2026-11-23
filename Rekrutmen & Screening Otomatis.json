@@ -1,0 +1,252 @@
+{
+  "name": "Rekrutmen & Screening Otomatis",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Form Rekrutmen dan Screening Otomatis",
+        "formDescription": "Silakan isi data pelamar dan unggah CV dalam format PDF.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Nama Lengkap",
+              "placeholder": "Contoh: Budi Santoso",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "placeholder": "nama@email.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Pengalaman",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "< 1 tahun"
+                  },
+                  {
+                    "option": "1–2 tahun"
+                  },
+                  {
+                    "option": "3–5 tahun"
+                  },
+                  {
+                    "option": "> 5 tahun"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Upload CV (PDF)",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "32027026-b86e-4142-a65c-18935a597da8",
+      "name": "n8n Form Trigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "c7cfaac5-6efe-4339-ac88-6c37bb772549"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mengambil data dari Form Trigger dan menyiapkan metadata CV.\n// File binary tetap dipertahankan agar dapat dibaca oleh Extract from File.\nconst items = $input.all();\n\nfor (const item of items) {\n  const binaryKeys = Object.keys(item.binary ?? {});\n  if (binaryKeys.length === 0) {\n    throw new Error('File CV tidak ditemukan. Pastikan pelamar mengunggah CV PDF.');\n  }\n\n  const binaryKey = binaryKeys[0];\n  const binaryData = item.binary[binaryKey];\n\n  item.json = {\n    ...item.json,\n    cv_binary_property: binaryKey,\n    cv_file_name: binaryData.fileName || 'CV.pdf',\n    cv_mime_type: binaryData.mimeType || 'application/pdf',\n    cv_base64: binaryData.data || '',\n    submitted_at: new Date().toLocaleString('id-ID', {\n      timeZone: 'Asia/Jakarta',\n      dateStyle: 'full',\n      timeStyle: 'long'\n    })\n  };\n}\n\nreturn items;\n"
+      },
+      "id": "8e51e13b-51ac-411d-a08c-1222ba7270a3",
+      "name": "Mengonversi ke Base64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "={{ $json.cv_binary_property }}",
+        "options": {}
+      },
+      "id": "f4aa8d2c-b375-4cfe-963a-07d61405afb6",
+      "name": "Extract from File",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'Anda adalah Senior Technical Recruiter yang objektif dan teliti. Lakukan screening CV untuk posisi Automation Engineer/Developer. Nilai terutama hard skills yang benar-benar didukung isi CV. Jangan mengarang pengalaman atau kemampuan.\\n\\nDATA FORM PELAMAR:\\nNama: ' + ($json['Nama Lengkap'] || $json.nama || 'Tidak dicantumkan') + '\\nEmail: ' + ($json.Email || $json.email || 'Tidak dicantumkan') + '\\nPengalaman menurut pelamar: ' + ($json.Pengalaman || $json.pengalaman || 'Tidak dicantumkan') + '\\nNama file: ' + ($json.cv_file_name || 'CV.pdf') + '\\nWaktu submit: ' + ($json.submitted_at || '-') + '\\n\\nISI CV (hasil ekstraksi PDF):\\n' + ($json.text || $json.extractedText || JSON.stringify($json)) + '\\n\\nBeri skor 0 sampai 100 berdasarkan relevansi hard skills, pengalaman, proyek, pendidikan/sertifikasi yang relevan, dan bukti kemampuan. Rekomendasi: Lanjut Interview jika skor >= 75, Pertimbangkan jika skor 50-74, Tidak Direkomendasikan jika skor < 50. Jika informasi tidak tersedia, tulis secara jujur.\\n\\nKELUARKAN HANYA JSON VALID tanpa markdown atau teks pengantar, dengan struktur persis berikut:\\n{\\\"candidate_name\\\":\\\"...\\\",\\\"email\\\":\\\"...\\\",\\\"years_of_experience\\\":\\\"...\\\",\\\"top_skills\\\":[\\\"...\\\"],\\\"score\\\":0,\\\"summary\\\":\\\"...\\\",\\\"hiring_recommendation\\\":\\\"...\\\",\\\"strengths\\\":[\\\"...\\\"],\\\"gaps\\\":[\\\"...\\\"]}'",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "id": "6278cca0-4c02-4005-be42-d3b02924b2f8",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        736,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "id": "f348c10d-7997-428c-818b-af2a92352b00",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        736,
+        240
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Membersihkan output LLM dan mengubahnya menjadi JSON object yang valid.\nconst items = $input.all();\n\nfunction extractText(json) {\n  return json.text ?? json.response ?? json.output ?? json.content ?? '';\n}\n\nfor (const item of items) {\n  const raw = extractText(item.json);\n  item.json.raw_output = raw;\n\n  try {\n    let cleaned = String(raw).trim();\n    cleaned = cleaned.replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/, '');\n\n    const firstBrace = cleaned.indexOf('{');\n    const lastBrace = cleaned.lastIndexOf('}');\n    if (firstBrace !== -1 && lastBrace !== -1) {\n      cleaned = cleaned.slice(firstBrace, lastBrace + 1);\n    }\n\n    const parsed = JSON.parse(cleaned);\n    const score = Number(parsed.score);\n\n    item.json = {\n      ...item.json,\n      candidate_name: parsed.candidate_name || 'Tidak dicantumkan',\n      email: parsed.email || 'Tidak dicantumkan',\n      years_of_experience: parsed.years_of_experience || 'Tidak dicantumkan',\n      ai_skills: Array.isArray(parsed.top_skills) ? parsed.top_skills : [],\n      ai_summary: parsed.summary || 'Tidak ada ringkasan.',\n      ai_score: Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0,\n      hiring_recommendation: parsed.hiring_recommendation || 'Perlu ditinjau manual',\n      strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],\n      gaps: Array.isArray(parsed.gaps) ? parsed.gaps : [],\n      parse_status: 'success'\n    };\n  } catch (error) {\n    item.json = {\n      ...item.json,\n      error: 'Gagal parsing JSON dari AI: ' + error.message,\n      parse_status: 'failed',\n      ai_skills: [],\n      ai_summary: 'Output AI tidak dapat dibaca. Periksa raw_output.',\n      ai_score: 0,\n      hiring_recommendation: 'Perlu ditinjau manual'\n    };\n  }\n}\n\nreturn items;\n"
+      },
+      "id": "760e64c1-e3d3-4e9a-a65a-f534ded220ec",
+      "name": "Mengubah ke JSON Object",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "6869186508",
+        "text": "={{ '📋 HASIL SCREENING KANDIDAT\\n\\n👤 Nama: ' + ($json.candidate_name || 'Tidak dicantumkan') + '\\n📧 Email: ' + ($json.email || 'Tidak dicantumkan') + '\\n⏳ Pengalaman: ' + ($json.years_of_experience || 'Tidak dicantumkan') + '\\n🛠 Skills: ' + (($json.ai_skills || []).join(', ') || 'Tidak ditemukan') + '\\n⭐ Score: ' + ($json.ai_score ?? 0) + '/100\\n📌 Rekomendasi: ' + ($json.hiring_recommendation || 'Perlu ditinjau manual') + '\\n\\n📝 Ringkasan: ' + ($json.ai_summary || '-') + '\\n\\n✅ Kelebihan: ' + (($json.strengths || []).join('; ') || '-') + '\\n⚠️ Gap: ' + (($json.gaps || []).join('; ') || '-') + '\\n\\n🕒 Waktu submit: ' + ($json.submitted_at || '-') + '\\n📄 File: ' + ($json.cv_file_name || '-') + ($json.error ? '\\n\\n⚠️ Error: ' + $json.error : '') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "41814ac5-5059-43bc-9e80-49aeda3b9d94",
+      "name": "Send a text message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        0
+      ],
+      "webhookId": "578f39b9-7955-459a-b8db-b0f5aa3ffb2c",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "n8n Form Trigger": {
+      "main": [
+        [
+          {
+            "node": "Mengonversi ke Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mengonversi ke Base64": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Mengubah ke JSON Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mengubah ke JSON Object": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "99eba68e-98c0-44e1-850a-90d6354d95c1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "KKSYG004yQnhvVhH",
+  "tags": []
+}
