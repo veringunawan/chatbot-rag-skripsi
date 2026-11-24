@@ -1,0 +1,278 @@
+{
+  "name": "Tugas 7 - Laporan Pengeluaran Mingguan",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "id": "646ca8f4-ac01-46e5-9400-34be89682484",
+      "name": "Setiap Hari Minggu",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1G978lzj_xptHkN_Z6-7HMUEO3KlDdVALJJlBHOQQS0s",
+          "mode": "list",
+          "cachedResultName": "dummy pengeluaran",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1G978lzj_xptHkN_Z6-7HMUEO3KlDdVALJJlBHOQQS0s/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1G978lzj_xptHkN_Z6-7HMUEO3KlDdVALJJlBHOQQS0s/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "5f2df817-1535-4c23-bd8e-74fe6071cb37",
+      "name": "Ambil Log Pengeluaran",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        336
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "XZb7tBrsJ6zIf1GB",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst items = $input.all();\n\nconst today = new Date();\ntoday.setHours(23, 59, 59, 999);\n\nconst sevenDaysAgo = new Date(today);\nsevenDaysAgo.setDate(today.getDate() - 7);\nsevenDaysAgo.setHours(0, 0, 0, 0);\n\nfunction parseDate(value) {\n  if (!value) return null;\n\n  const match = String(value).trim().match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/);\n\n  if (match) {\n    return new Date(\n      Number(match[3]),\n      Number(match[2]) - 1,\n      Number(match[1])\n    );\n  }\n\n  const date = new Date(value);\n  return isNaN(date.getTime()) ? null : date;\n}\n\nconst expenses = items\n  .map(item => item.json)\n  .filter(row => {\n    const date = parseDate(row.Tanggal);\n    return date && date >= sevenDaysAgo && date <= today;\n  });\n\nconst categoryTotals = {};\nlet grandTotal = 0;\n\nlet reportText = \"LAPORAN PENGELUARAN 7 HARI TERAKHIR\\n\\n\";\n\nfor (const row of expenses) {\n  const tanggal = row.Tanggal || \"-\";\n  const kategori = row.Kategori || \"Lain-lain\";\n  const deskripsi = row.Deskripsi || \"-\";\n  const penerima = row.Penerima || \"-\";\n\n  // Membaca nama kolom persis seperti Google Sheets\n  const jumlah = Number(\n    String(row[\"Jumlah (IDR)\"] ?? row.Jumlah ?? 0)\n      .replace(/[^\\d.-]/g, \"\")\n  ) || 0;\n\n  grandTotal += jumlah;\n\n  categoryTotals[kategori] =\n    (categoryTotals[kategori] || 0) + jumlah;\n\n  reportText +=\n    `Tanggal: ${tanggal}\\n` +\n    `Kategori: ${kategori}\\n` +\n    `Deskripsi: ${deskripsi}\\n` +\n    `Penerima: ${penerima}\\n` +\n    `Jumlah: Rp${jumlah.toLocaleString(\"id-ID\")}\\n\\n`;\n}\n\nconst sortedCategories = Object.entries(categoryTotals)\n  .sort((a, b) => b[1] - a[1]);\n\nreportText += \"\\nRINGKASAN KATEGORI:\\n\";\n\nfor (const [category, total] of sortedCategories) {\n  reportText +=\n    `${category}: Rp${total.toLocaleString(\"id-ID\")}\\n`;\n}\n\nreportText +=\n  `\\nTOTAL PENGELUARAN: Rp${grandTotal.toLocaleString(\"id-ID\")}\\n`;\n\nreportText +=\n  `JUMLAH TRANSAKSI: ${expenses.length}\\n`;\n\nreportText +=\n  `KATEGORI TERBESAR: ${sortedCategories[0]?.[0] || \"-\"}\\n`;\n\nreturn [{\n  json: {\n    hasExpenses: expenses.length > 0,\n    totalTransactions: expenses.length,\n    grandTotal,\n    categoryTotals,\n    reportText\n  }\n}];\n"
+      },
+      "id": "32e09f1d-294b-4f19-bd94-0d86dcce1c54",
+      "name": "Filter 7 Hari & Format Teks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "271b5023-0b1a-477f-ab7a-10b066f507e1",
+              "leftValue": "={{ $json.hasExpenses }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "eb9fbb13-7bd3-4c65-a619-75676f1aabe7",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Berikut data pengeluaran saya selama 7 hari terakhir:\\n\\n{{ $json.reportText }}\\n\\nInstruksi: Tulis ringkasan kebiasaan belanja selama seminggu dan berikan 1 saran penghematan yang spesifik berdasarkan data tersebut. Sebutkan kategori pengeluaran terbesar jika datanya tersedia. Gunakan Bahasa Indonesia yang jelas, ringkas, dan mudah dipahami. Jangan mengarang data atau angka yang tidak tersedia.",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "id": "ad5386a0-2101-450a-b9bc-f89eadd29bbb",
+      "name": "Analisis",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        944,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "model": "xiaomi/mimo-v2.6-flash",
+        "options": {}
+      },
+      "id": "8ab6c593-67c0-4801-8cfc-4c75727fed2d",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        0
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "iPZFVzr8reRcwMlH",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6869186508",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "b14457e3-5083-47ee-bf17-d4287e47e34a",
+      "name": "Pesan True",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        192
+      ],
+      "webhookId": "d6bf4c6d-b217-4d87-872c-3f4b7708fce3",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "6869186508",
+        "text": "Tidak ditemukan log pengeluaran untuk 7 hari terakhir. Tidak ada analisis AI yang dibuat.",
+        "additionalFields": {}
+      },
+      "id": "b2caa75b-6aa2-439f-9265-e97509e0bd61",
+      "name": "Pesan False",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        944,
+        512
+      ],
+      "webhookId": "cc8390d2-49d8-4727-8aed-79c5edf2636a",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Setiap Hari Minggu": {
+      "main": [
+        [
+          {
+            "node": "Ambil Log Pengeluaran",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil Log Pengeluaran": {
+      "main": [
+        [
+          {
+            "node": "Filter 7 Hari & Format Teks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter 7 Hari & Format Teks": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Analisis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pesan False",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisis": {
+      "main": [
+        [
+          {
+            "node": "Pesan True",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analisis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2e623658-2f1a-41ba-8068-67a9cef27885",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "3ZWAmqOSe9QFugFd",
+  "tags": []
+}
