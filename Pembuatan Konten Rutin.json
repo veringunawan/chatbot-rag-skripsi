@@ -1,0 +1,1383 @@
+{
+  "name": "Pembuatan Konten Rutin (NF Academy)",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "aea7abc0-787a-4fe7-a9cb-f0aa5da2f48a",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -960,
+        272
+      ],
+      "webhookId": "c7df304b-f979-4c2e-8b1e-f8c969a8dcd7",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text || \"\" }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "3a17c447-4be8-4f1a-846f-f37731595c26"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Ide (/start)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text || \"\" }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "386f8b6c-9f18-41e1-bf13-15cee839ab34"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Gambar (teks biasa)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ ($json.message.caption || \"\").toLowerCase() }}",
+                    "rightValue": "video",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "5fe608f3-8999-4436-b926-b6b5e5d35bbe"
+                  },
+                  {
+                    "leftValue": "={{ ($json.message.photo || []).length > 0 }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "db9d2e40-7723-4b48-8ea2-71f3adc8c438"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Video (caption video)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "16395fff-9270-4200-8965-a55ad8ac7496",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -608,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "|",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7bcffe25-ce86-4058-8b0f-02495d966be8",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -256,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "tanggal",
+              "name": "tanggal",
+              "value": "={{ $json.message.text.replace(/^\\/start/i, \"\").split(\"|\")[0].trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "tema",
+              "name": "tema",
+              "value": "={{ $json.message.text.split(\"|\").slice(1).join(\"|\").trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "chat_id",
+              "name": "chat_id",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4f5b5300-191b-402a-9835-b03c2d1b4e25",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        176,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Buat rencana konten harian untuk tanggal {{ $json.tanggal }} dengan tema \"{{ $json.tema }}\". Buat TEPAT 4 ide konten (pagi, siang, sore, malam). Setiap ide berisi time_slot, title, platform, focus, dan ideas (deskripsi singkat). Gunakan Bahasa Indonesia.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "id": "1f1afc0c-16ad-49fa-bba5-42d940fbd57a",
+      "name": "Membuat Ide Konten",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        400,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "id": "f455cbab-505b-4480-a34b-896e4617a3f9",
+      "name": "2.5 flash",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        416,
+        656
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "Gateway credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"ideas\": [\n    { \"time_slot\": \"08:00\", \"title\": \"Judul konten\", \"platform\": \"Instagram, TikTok\", \"focus\": \"Edukasi\", \"ideas\": \"Deskripsi ide konten\" }\n  ]\n}"
+      },
+      "id": "63079e7b-ce1e-4b23-8817-843f71303467",
+      "name": "Output LLM",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        544,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "time_slot",
+              "name": "time_slot",
+              "value": "={{ $json.output.ideas[3].time_slot }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.output.ideas[3].title }}",
+              "type": "string"
+            },
+            {
+              "id": "platform",
+              "name": "platform",
+              "value": "={{ $json.output.ideas[3].platform }}",
+              "type": "string"
+            },
+            {
+              "id": "focus",
+              "name": "focus",
+              "value": "={{ $json.output.ideas[3].focus }}",
+              "type": "string"
+            },
+            {
+              "id": "ideas",
+              "name": "ideas",
+              "value": "={{ $json.output.ideas[3].ideas }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "01f36ae6-2d4d-49b6-84cb-170983f73cb1",
+      "name": "Output 4",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        752,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "time_slot",
+              "name": "time_slot",
+              "value": "={{ $json.output.ideas[2].time_slot }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.output.ideas[2].title }}",
+              "type": "string"
+            },
+            {
+              "id": "platform",
+              "name": "platform",
+              "value": "={{ $json.output.ideas[2].platform }}",
+              "type": "string"
+            },
+            {
+              "id": "focus",
+              "name": "focus",
+              "value": "={{ $json.output.ideas[2].focus }}",
+              "type": "string"
+            },
+            {
+              "id": "ideas",
+              "name": "ideas",
+              "value": "={{ $json.output.ideas[2].ideas }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e36d2be7-0f6d-481a-bd74-40e65b03e25d",
+      "name": "Output 3",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        752,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "time_slot",
+              "name": "time_slot",
+              "value": "={{ $json.output.ideas[1].time_slot }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.output.ideas[1].title }}",
+              "type": "string"
+            },
+            {
+              "id": "platform",
+              "name": "platform",
+              "value": "={{ $json.output.ideas[1].platform }}",
+              "type": "string"
+            },
+            {
+              "id": "focus",
+              "name": "focus",
+              "value": "={{ $json.output.ideas[1].focus }}",
+              "type": "string"
+            },
+            {
+              "id": "ideas",
+              "name": "ideas",
+              "value": "={{ $json.output.ideas[1].ideas }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3f77a874-7491-4968-8e79-d9854cf50256",
+      "name": "Output 2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        752,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "time_slot",
+              "name": "time_slot",
+              "value": "={{ $json.output.ideas[0].time_slot }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.output.ideas[0].title }}",
+              "type": "string"
+            },
+            {
+              "id": "platform",
+              "name": "platform",
+              "value": "={{ $json.output.ideas[0].platform }}",
+              "type": "string"
+            },
+            {
+              "id": "focus",
+              "name": "focus",
+              "value": "={{ $json.output.ideas[0].focus }}",
+              "type": "string"
+            },
+            {
+              "id": "ideas",
+              "name": "ideas",
+              "value": "={{ $json.output.ideas[0].ideas }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fe435cc7-b302-401a-b293-1f3c45f0cafa",
+      "name": "Output 1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        752,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Format salah. Gunakan: /start YYYY-MM-DD | tema konten\nContoh: /start 2026-11-07 | Tips belajar n8n",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "48e5970e-3ab8-4233-b7fa-f17b4b2f5500",
+      "name": "Format salah (False)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        624
+      ],
+      "webhookId": "2292f1a6-680e-4d9e-87a9-69f9ddd91d8b",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/jobs/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpTemplatedCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"gpt-image-2-text-to-image\", input: { prompt: $json.message.text, aspect_ratio: \"auto\" } }) }}",
+        "options": {}
+      },
+      "id": "9dc3b740-de62-4ae2-b12c-866d6860f36d",
+      "name": "KIE.Ai - Generate Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -464,
+        0
+      ],
+      "credentials": {
+        "httpTemplatedCustomAuth": {
+          "id": "ojGrCpHxhSaTHaYF",
+          "name": "KIE AI API (Verin G)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "id": "57905bed-94b0-48a7-8364-53773bc256da",
+      "name": "Tunggu Gambar",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        -320
+      ],
+      "webhookId": "88f65c09-1cd6-4a79-825b-8c4ea7f4eee3"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/jobs/recordInfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpTemplatedCustomAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $(\"KIE.Ai - Generate Image\").item.json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "172bc44d-7c38-428a-a970-bbb56d4aa50a",
+      "name": "KIE.Ai - Cek Status Gambar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        -400
+      ],
+      "credentials": {
+        "httpTemplatedCustomAuth": {
+          "id": "ojGrCpHxhSaTHaYF",
+          "name": "KIE AI API (Verin G)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.data.state }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "39136a7f-a0b5-457f-8f2b-f7d4ba35acb3",
+      "name": "Gambar Selesai?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "imageUrl",
+              "name": "imageUrl",
+              "value": "={{ (typeof $json.data.resultJson === \"string\" ? JSON.parse($json.data.resultJson) : $json.data.resultJson).resultUrls[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "54c6df51-3257-4ca0-b5be-5d2d410c5284",
+      "name": "Ambil URL Gambar",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.imageUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "01f20627-2e05-4cac-ac60-179c98a6e677",
+      "name": "Download Gambar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $(\"Telegram Trigger\").item.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "Gambar sudah jadi. Kirim balik gambar ini dengan caption \"video\" untuk dibuatkan video."
+        }
+      },
+      "id": "edd70308-962c-46eb-94a7-17d85617e753",
+      "name": "Kirim Gambar",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        -112
+      ],
+      "webhookId": "7af73abe-da34-4c18-bc6a-a800b90643ac",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[$json.message.photo.length - 1].file_id }}",
+        "additionalFields": {}
+      },
+      "id": "8a0fada3-5c56-4a2c-baff-0f1311ab1039",
+      "name": "Get a file",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        704
+      ],
+      "webhookId": "6b35a72b-33dd-432c-b13c-f6ade46a2058",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "id": "e1dc632d-0e44-417f-a36f-670b696a5224",
+      "name": "Extract from File",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Base64 string dari node Extract from File\nconst b64 = $json.data;\nif (!b64) throw new Error('Data base64 tidak ditemukan');\n\n// Konversi Base64 -> Buffer biner\nconst buffer = Buffer.from(b64, 'base64');\nif (!buffer.length) throw new Error('Buffer gambar kosong');\n\n// Siapkan data URL agar bisa di-upload ke KIE.Ai\nreturn {\n  json: {\n    fileSize: buffer.length,\n    mimeType: 'image/jpeg',\n    fileName: 'telegram-image.jpg',\n    base64DataUrl: 'data:image/jpeg;base64,' + buffer.toString('base64')\n  }\n};"
+      },
+      "id": "f344592e-1148-4ea8-a24d-5772f436856a",
+      "name": "base64 to binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        1088
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://kieai.redpandaai.co/api/file-base64-upload",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpTemplatedCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ base64Data: $json.base64DataUrl, uploadPath: \"images/telegram\", fileName: $json.fileName }) }}",
+        "options": {}
+      },
+      "id": "acfa6412-d8ad-4d38-ba2f-ce97668c2e68",
+      "name": "KIE.Ai - Upload Gambar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        352,
+        1088
+      ],
+      "credentials": {
+        "httpTemplatedCustomAuth": {
+          "id": "ojGrCpHxhSaTHaYF",
+          "name": "KIE AI API (Verin G)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analisis gambar ini lalu tulis satu prompt video sinematik pendek (8 detik) dalam bahasa Inggris: subjek, gerakan kamera, pencahayaan, dan suasana. Kembalikan prompt saja tanpa penjelasan.",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "HumanMessagePromptTemplate",
+              "messageType": "imageUrl",
+              "imageUrl": "={{ $(\"base64 to binary\").item.json.base64DataUrl }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "id": "a2b2a37f-1b78-49a0-bc2a-a8e91e8db378",
+      "name": "Analyze an image",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        560,
+        1152
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "id": "cedea2bf-0984-49c9-bd9d-f5f36a31a6c7",
+      "name": "Gemini Vision Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        768,
+        944
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "Gateway credits",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/jobs/createTask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpTemplatedCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"grok-imagine-video-1-5-preview\", input: { prompt: $json.content?.parts?.[0]?.text || $json.text || \"Cinematic slow camera movement\", image_urls: [$(\"KIE.Ai - Upload Gambar\").item.json.data.downloadUrl], aspect_ratio: \"auto\", resolution: \"480p\", duration: 8 } }) }}",
+        "options": {}
+      },
+      "id": "51c7aa21-85d5-42ad-8fc7-5b706d523253",
+      "name": "KIE.Ai - Generate Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        992,
+        656
+      ],
+      "credentials": {
+        "httpTemplatedCustomAuth": {
+          "id": "ojGrCpHxhSaTHaYF",
+          "name": "KIE AI API (Verin G)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "id": "c471029d-9d92-4ed5-af6e-b39995fe1132",
+      "name": "Tunggu Video",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        656
+      ],
+      "webhookId": "34963f54-7d73-4b37-ab6a-71b115415c8b"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/jobs/recordInfo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpTemplatedCustomAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $(\"KIE.Ai - Generate Video\").item.json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e195593b-8b9f-493c-9def-c67b4ce0e233",
+      "name": "KIE.Ai - Cek Status Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1456,
+        592
+      ],
+      "credentials": {
+        "httpTemplatedCustomAuth": {
+          "id": "ojGrCpHxhSaTHaYF",
+          "name": "KIE AI API (Verin G)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.data.state }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "d2d9c9ce-f371-40b5-b536-edb91186c79f"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b34025ab-9fef-45fd-bbcc-ee4982f2d748",
+      "name": "Video Selesai?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1456,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "videoUrl",
+              "name": "videoUrl",
+              "value": "={{ (typeof $json.data.resultJson === \"string\" ? JSON.parse($json.data.resultJson) : $json.data.resultJson).resultUrls[0] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e5549f2c-bd62-4c67-8214-59a74378d480",
+      "name": "Ambil URL Video",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1664,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.videoUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "411e0978-e2a0-4f75-9906-83824463967c",
+      "name": "Download Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $(\"Telegram Trigger\").item.json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "Video berhasil dibuat dari gambar kamu."
+        }
+      },
+      "id": "d3c9ad9a-bdb1-462f-aaa8-b20a05f34c33",
+      "name": "Send a video",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        992,
+        1312
+      ],
+      "webhookId": "b370b4a5-05f2-46a6-96f6-02551a81e85c",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Permintaan diterima, sedang diproses...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "37c2ee66-7ed0-40cb-9550-a31029ae0fd4",
+      "name": "Respon Cepat",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -576,
+        976
+      ],
+      "webhookId": "08878db3-c236-407c-b476-f07f518f8b78",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "id": "4736e86c-8110-4e79-81e8-98910250db5d",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        976,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $(\"Telegram Trigger\").first().json.message.chat.id }}",
+        "text": "=Jam: {{ $json.time_slot }}\nJudul: {{ $json.title }}\nPlatform: {{ $json.platform }}\nFokus: {{ $json.focus }}\nIde: {{ $json.ideas }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "31fab974-b6df-44c8-b096-e0915a186e3d",
+      "name": "Kirim Ide ke Tim",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        336
+      ],
+      "webhookId": "f2b80166-a727-4922-84d9-3f67a193d5ef",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respon Cepat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "KIE.Ai - Generate Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format salah (False)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Membuat Ide Konten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Membuat Ide Konten": {
+      "main": [
+        [
+          {
+            "node": "Output 4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Output 3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Output 2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Output 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2.5 flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Membuat Ide Konten",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output LLM": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Membuat Ide Konten",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output 4": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Output 3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Output 2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Output 1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KIE.Ai - Generate Image": {
+      "main": [
+        [
+          {
+            "node": "Tunggu Gambar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tunggu Gambar": {
+      "main": [
+        [
+          {
+            "node": "KIE.Ai - Cek Status Gambar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KIE.Ai - Cek Status Gambar": {
+      "main": [
+        [
+          {
+            "node": "Gambar Selesai?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gambar Selesai?": {
+      "main": [
+        [
+          {
+            "node": "Ambil URL Gambar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tunggu Gambar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil URL Gambar": {
+      "main": [
+        [
+          {
+            "node": "Download Gambar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Gambar": {
+      "main": [
+        [
+          {
+            "node": "Kirim Gambar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "base64 to binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "base64 to binary": {
+      "main": [
+        [
+          {
+            "node": "KIE.Ai - Upload Gambar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KIE.Ai - Upload Gambar": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "KIE.Ai - Generate Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Vision Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KIE.Ai - Generate Video": {
+      "main": [
+        [
+          {
+            "node": "Tunggu Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tunggu Video": {
+      "main": [
+        [
+          {
+            "node": "KIE.Ai - Cek Status Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KIE.Ai - Cek Status Video": {
+      "main": [
+        [
+          {
+            "node": "Video Selesai?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Selesai?": {
+      "main": [
+        [
+          {
+            "node": "Ambil URL Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tunggu Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil URL Video": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Send a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Kirim Ide ke Tim",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2224ca8d-c46d-4468-b07c-e467a0113e03",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "5OqAZgrCZkdSNvJd",
+  "tags": []
+}
