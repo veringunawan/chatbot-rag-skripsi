@@ -1,0 +1,289 @@
+{
+  "name": "Tugas 4 - SOP AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "c316660a-9f04-49ba-b57d-2466ee308ac9",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -48,
+        336
+      ],
+      "webhookId": "b7e9812e-a58a-44e2-9d08-710e9e20850c",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "06b30880-f01c-4c4f-9dbd-6812fbba48f0",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "reimbursement",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "b2509c70-d85c-47e7-9881-9a37794c1066",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "cuti",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "d2f19bf5-267f-481b-8f81-905be687a3ca",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "lembur",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "e68c41dd-8397-40eb-892a-07fd19680c11",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "asuransi",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "f0a25ae3-3abd-4e0d-a928-56629847e35b",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "alat kerja",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "12898256-9157-4258-a57e-710312a12fac",
+      "name": "Memastikan sesuai format",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        112,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Pertanyaan yang Anda kirimkan tidak sesuai. Harap gunakan salah satu pertanyaan berikut:\\n\\n1. Bagaimana prosedur reimbursement?\\n2. Prosedur pengajuan cuti tahunan\\n3. Bagaimana aturan lembur di perusahaan?\\n4. Apa syarat klaim asuransi kesehatan?\\n5. Bagaimana prosedur permintaan alat kerja baru?\\n\\nSilakan kirim salah satu pertanyaan di atas.",
+        "additionalFields": {}
+      },
+      "id": "e26f36fd-975e-4bd1-b40a-dc477b4971e4",
+      "name": "False Output",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        512
+      ],
+      "webhookId": "18d470cf-a993-4d56-9720-88341a940002",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "options": {
+          "systemMessage": "Anda adalah SOP AI Agent, asisten khusus untuk menjawab pertanyaan karyawan mengenai SOP perusahaan.\\n\\nATURAN KERAS (HARD RULES):\\n1. WAJIB gunakan tool Data Pertanyaan sebelum menjawab.\\n2. Jawaban hanya boleh berdasarkan data yang ditemukan melalui tool tersebut.\\n3. DILARANG mengarang, menebak, atau menggunakan pengetahuan umum di luar database.\\n4. Jika informasi tidak ditemukan, jawab: Maaf, informasi tersebut tidak tersedia di database SOP perusahaan. Silakan hubungi tim HR.\\n5. Jangan menambahkan prosedur, syarat, nominal, atau ketentuan yang tidak tercantum dalam database.\\n6. Gunakan bahasa Indonesia yang sopan, jelas, dan mudah dipahami.\\n7. Jika data tool tidak cukup untuk menjawab, nyatakan bahwa informasi tidak tersedia.\\n\\nSelalu periksa Data Pertanyaan sebelum menyusun jawaban."
+        }
+      },
+      "id": "6ffc1832-6446-46f3-8018-8a4a1945e1b9",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "id": "bf247429-b8c9-4e39-a1d4-feb5f541f2ba",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        464,
+        512
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "Vab1g5uREeHsR6r2",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "id": "6deb77ff-f389-4640-917e-c967b79246ee",
+      "name": "True Output",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        320
+      ],
+      "webhookId": "2643d84a-7d6f-4fae-ad9b-35e04cff8cb3",
+      "credentials": {
+        "telegramApi": {
+          "id": "i9wnJhWmZyU1Zkzb",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1OKW0BQCaRd5oPI9qooxntDMcrxvgkkR_Hx20cdGneKs",
+          "mode": "list",
+          "cachedResultName": "Database_SOP_AI_Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OKW0BQCaRd5oPI9qooxntDMcrxvgkkR_Hx20cdGneKs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 582322104,
+          "mode": "list",
+          "cachedResultName": "Data Pertanyaan",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OKW0BQCaRd5oPI9qooxntDMcrxvgkkR_Hx20cdGneKs/edit#gid=582322104"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        608,
+        544
+      ],
+      "id": "1b48f438-fcbb-467c-a494-f8f35bd4e805",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "XZb7tBrsJ6zIf1GB",
+          "name": "Google Sheets account 4"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Memastikan sesuai format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memastikan sesuai format": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "False Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "True Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "421d1d28-5474-4a5f-8e9c-7aa5dad68a38",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3445dd7122191463e4535baef4ff67f5da989e450dfed61afad278e15f711bc3"
+  },
+  "nodeGroups": [],
+  "id": "2ZXJEJZm6nJ4lXE3",
+  "tags": []
+}
